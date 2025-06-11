@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "invest-demo-plugin"
+# Allow setuptools_scm to derive the version dynamically from the git metadata
+# Using setuptools_scm is not required, but we highly recommend it
+dynamic = ["version"]
+dependencies = [
+  "pygeoprocessing",
+  "taskgraph",
+  "natcap.invest>=3.16.0"
+]
+
+[tool.setuptools_scm]
+# Use default configuration. A warning is issued if this section is absent.
+
+[tool.natcap.invest]
+# This is the plugin API version that this plugin uses.
+# invest uses this to determine whether it can run this plugin.
+# "v1" is the current and only version at this time
+api_version = "v1"
+
+# This is the importable package name of the plugin. It should match the name of the
+# package directory. It MUST begin with "invest". It is included here so that
+# natcap.invest knows how to import the plugin.
+# This is distinct from the project.name defined above (these names are often the same,
+# but don't have to be). Unlike the project.name, this name should not contain hyphens
+# or other special characters because it will be used in an import statement.
+package_name = "invest_ucm_calibration"
+
+# List of conda dependencies to install into the plugin's conda env
+# Only include dependencies that cannot be specified in project.dependencies because
+# they are not available thru pip. Usually this is only python itself, and any
+# non-python dependencies like the GDAL binaries.
+#
+# Python is installed into the plugin environment by default, but you may
+# include it here if you wish to specify a particular version
+conda_dependencies = [
+  "python==3.13",
+  "gdal<3.11",  # missing libgdal.so issue happened with gdal 3.11
+  "geotiff>=1.7.3",  # earlier versions don't support space in CONDA_PREFIX
+  "invest-ucm-calibration",
+]
+
+[tool.setuptools.package-data]
+# Use this to include any non-python files in your package distribution,
+# such as sample data, or a non-python executable
+#foo = ["data/foo"]
