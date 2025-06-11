@@ -24,6 +24,31 @@ MODEL_SPEC = spec.ModelSpec(
             must_exist=False,
             permissions="rwx"
         ),
+        spec.SingleBandRasterInput(
+            id="lulc_raster_path",
+            name=gettext("Land use/land cover"),
+            about=gettext(
+                "Map of land use / land cover codes. Each land use/land "
+                "cover type must be assigned a unique integer code."
+            ),
+            required=True,
+            data_type=int,  # TODO is there a preferred type?
+            projected=True,
+            projection_units=u.meter,
+        ),
+        spec.OptionStringInput(
+            id="cc_method",
+            name="CC Method",
+            about=gettext(""),
+            required=True,
+            options=['factors', 'intensity'],
+        ),
+        # TODO ref_et_raster_filepaths
+        spec.VectorInput(
+            id="aoi_vector_filepath",
+            name="Area of Interest",
+            required=False,
+        ),
     ],
     outputs=[
     ],
