@@ -62,6 +62,8 @@ MODEL_SPEC = spec.ModelSpec(
 # New table: dates
 # Columns:
 #   * date (probably use an ISO-compatible datetime) (required if calib w/dates)
+#       --> if we aren't calibrating with dates, then we just pass None to the
+#           calibration tool and let the tool do its thing
 #   * t_ref (req)
 #   * uhi_max (optional)
 #   * t_raster_filepaths (required if calibrating against temp maps)
@@ -73,7 +75,6 @@ MODEL_SPEC = spec.ModelSpec(
 #       * dates are taken from the station table instead
 #   * if the user does not provide dates, we assume some integer dates
 #       (numpy.arange(len(ref_et_raster_filepaths)))
-
 
 
 def execute(args):
