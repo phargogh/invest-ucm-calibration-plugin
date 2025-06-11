@@ -54,6 +54,18 @@ MODEL_SPEC = spec.ModelSpec(
     ],
 )
 
+# Checkboxes
+#   * Calibrate with dates?  Yes/No
+#   * Calibrate against temperature maps?     | One or the other
+#   * Calibrate against station measurements? | One or the other
+
+# New table: dates
+# Columns:
+#   * date (probably use an ISO-compatible datetime)
+#   * t_ref
+#   * uhi_max (optional column)
+#   * t_raster_filepaths (required if calibrating against temp maps)
+
 
 def execute(args):
     pass
