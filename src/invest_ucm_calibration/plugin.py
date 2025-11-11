@@ -1,8 +1,13 @@
+import logging
+import pprint
+
 from natcap.invest import gettext
 from natcap.invest import spec
 from natcap.invest import utils
 from natcap.invest import validation
 from natcap.invest.unit_registry import u
+
+LOGGER = logging.getLogger(__name__)
 
 MODEL_SPEC = spec.ModelSpec(
     model_id="invest-ucm-calibration",
@@ -78,7 +83,7 @@ MODEL_SPEC = spec.ModelSpec(
 
 
 def execute(args):
-    pass
+    pprint.pprint(args)
 
 
 @validation.invest_validator
