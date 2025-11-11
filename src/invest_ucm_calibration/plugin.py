@@ -17,18 +17,7 @@ MODEL_SPEC = spec.ModelSpec(
     input_field_order=[
     ],
     inputs=[
-        spec.DirectoryInput(
-            id="workspace_dir",
-            name=gettext("workspace"),
-            about=gettext(
-                "The folder where all the model's output files will be "
-                "written. If this folder does not exist, it will be created. "
-                "If data already exists in the folder, it will be "
-                "overwritten."),
-            contents={},
-            must_exist=False,
-            permissions="rwx"
-        ),
+        spec.WORKSPACE,
         spec.SingleBandRasterInput(
             id="lulc_raster_path",
             name=gettext("Land use/land cover"),
