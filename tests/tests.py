@@ -12,7 +12,7 @@ DATA_ZIP = 'https://github.com/martibosch/invest-ucm-calibration/archive/refs/ta
 
 if not os.path.exists(DATA):
     print(f"Downloading data directory from {DATA_ZIP}")
-    subprocess.run(['wget', DATA_ZIP, -O, 'data.zip'])
+    subprocess.run(['wget', DATA_ZIP, '-O', 'data.zip'])
     subprocess.run(['unzip', 'tests/data', '-d', DATA])
     os.remove('data.zip')
 
@@ -26,7 +26,7 @@ class UCMCalibrationPluginTests(unittest.TestCase):
 
     def test_execute(self):
         args = {
-            'workspace_dir': self.workspace_dir,
+            'workspace_dir': self.workspace,
             'lulc_raster_path': 'foo',
             'cc_method': 'intensity',
             'aoi_vector_filepath': '',
@@ -35,7 +35,7 @@ class UCMCalibrationPluginTests(unittest.TestCase):
 
     def test_validate(self):
         args = {
-            'workspace_dir': self.workspace_dir,
+            'workspace_dir': self.workspace,
             'lulc_raster_path': '',
             'cc_method': 'intensity',
             'aoi_vector_path': ''

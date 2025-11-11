@@ -14,7 +14,11 @@ MODEL_SPEC = spec.ModelSpec(
     model_title="Urban Cooling Model Calibration",
     userguide=(
         "https://invest-ucm-calibration.readthedocs.io/en/latest/usage.html"),
+    module_name=__name__,
     input_field_order=[
+        ['workspace_dir'],
+        ['lulc_raster_path', 'aoi_vector_path'],
+        ['cc_method'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -27,22 +31,30 @@ MODEL_SPEC = spec.ModelSpec(
             ),
             required=True,
             data_type=int,  # TODO is there a preferred type?
+            units=None,
             projected=True,
             projection_units=u.meter,
         ),
         spec.OptionStringInput(
             id="cc_method",
-            name="CC Method",
-            about=gettext(""),
-            required=True,
-            options=['factors', 'intensity'],
+            name=gettext("cooling capacity calculation method"),
+            about=gettext("The air temperature predictor method to use."),
+            options=[
+                spec.Option(
+                    key="factors",
+                    about=(
+                        "Use the weighted shade, albedo, and ETI factors as a temperature"
+                        " predictor (for daytime temperatures).")),
+                spec.Option(
+                    key="intensity",
+                    about=(
+                        "Use building intensity as a temperature predictor (for nighttime"
+                        " temperatures)."))
+            ]
         ),
         # TODO ref_et_raster_filepaths
-        spec.VectorInput(
-            id="aoi_vector_filepath",
-            name="Area of Interest",
-            required=False,
-        ),
+        spec.AOI.model_copy(update=dict(id="aoi_vector_path")),
+        # T_REFs - numeric or iterable of numbers
     ],
     outputs=[
     ],
@@ -76,5 +88,5 @@ def execute(args):
 
 
 @validation.invest_validator
-def validate(args):
+def validate(args, limit_to=None):
     return validation.validate(args, MODEL_SPEC)
