@@ -1,3 +1,4 @@
+import glob
 import os
 import shutil
 import subprocess
@@ -12,9 +13,35 @@ DATA_ZIP = 'https://github.com/martibosch/invest-ucm-calibration/archive/refs/ta
 
 if not os.path.exists(DATA):
     print(f"Downloading data directory from {DATA_ZIP}")
-    subprocess.run(['wget', DATA_ZIP, '-O', 'data.zip'])
-    subprocess.run(['unzip', 'tests/data', '-d', DATA])
-    os.remove('data.zip')
+    LOCAL_ZIP = os.path.join(CWD, 'data.zip')
+    subprocess.run(['wget', DATA_ZIP, '-O', LOCAL_ZIP], check=True)
+    subprocess.run(['unzip', '-j', LOCAL_ZIP,
+                    'invest-ucm-calibration-0.6.0/tests/data/*', '-d', DATA],
+                   check=True)
+    assert len(os.listdir(DATA)), 'Data did not expand correctly'
+    os.remove(LOCAL_ZIP)
+
+# Parameters here match what we use in UCM, not the ones that the calibration
+# tool uses.  The plugin will handle the mapping.
+TEST_KWARGS = {
+    # standard args for UCM
+    'lulc_raster_path': os.path.join(DATA, 'lulc.tif'),
+    'biophysical_table_path': os.path.join(DATA, 'biophysical-table.csv'),
+    'aoi_vector_path': os.path.join(DATA, 'aoi.gpkg'),
+    'cc_method': 'factors',  # or 'intensity'
+
+    # Calibration tool takes modified type (list)
+    'ref_eto_raster_path': glob.glob(os.path.join(DATA, 'ref_et*.tif'))[0],
+    't_ref': glob.glob(os.path.join(DATA, 'T*.tif'))[0],  # CALTOOL: takes list
+
+    # nonstandard args, for the calibration tool
+    'station_t_filepath': os.path.join(DATA, 'station-t.csv'),
+    'station_locations': os.path.join(DATA, 'station-locations.csv'),
+    'station_t_one_day_filepath': os.path.join(DATA, 'station-t-one-day.csv'),
+    'num_steps': 2,
+    'num_update_logs': 2,
+
+}
 
 
 class UCMCalibrationPluginTests(unittest.TestCase):
@@ -34,10 +61,6 @@ class UCMCalibrationPluginTests(unittest.TestCase):
         plugin.execute(args)
 
     def test_validate(self):
-        args = {
-            'workspace_dir': self.workspace,
-            'lulc_raster_path': '',
-            'cc_method': 'intensity',
-            'aoi_vector_path': ''
-        }
+        args = TEST_KWARGS.copy()
+        args['workspace_dir'] = self.workspace
         self.assertEqual([], plugin.validate(args))
