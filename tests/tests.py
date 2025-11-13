@@ -5,7 +5,10 @@ import subprocess
 import tempfile
 import unittest
 
+import pygeoprocessing
 from invest_ucm_calibration import plugin
+from osgeo import gdal
+from osgeo import osr
 
 CWD = os.path.dirname(__file__)
 DATA = os.path.join(CWD, 'data')
@@ -21,11 +24,22 @@ if not os.path.exists(DATA):
     assert len(os.listdir(DATA)), 'Data did not expand correctly'
     os.remove(LOCAL_ZIP)
 
+    # LULC is shipped with a geographic coordinate system, which isn't allowed
+    # by the model.  Warp to a local projection.
+    target_srs = osr.SpatialReference()
+    target_srs.ImportFromEPSG(32632)  # WGS84 / UTM zone 32 N
+    ten_km = 1000*10
+    pygeoprocessing.warp_raster(
+        os.path.join(DATA, 'lulc.tif'), [ten_km, -ten_km],
+        os.path.join(DATA, 'lulc_utm32n.tif'), resample_method='near',
+        target_projection_wkt=target_srs.ExportToWkt())
+
+
 # Parameters here match what we use in UCM, not the ones that the calibration
 # tool uses.  The plugin will handle the mapping.
 TEST_KWARGS = {
     # standard args for UCM
-    'lulc_raster_path': os.path.join(DATA, 'lulc.tif'),
+    'lulc_raster_path': os.path.join(DATA, 'lulc_utm32n.tif'),
     'biophysical_table_path': os.path.join(DATA, 'biophysical-table.csv'),
     'aoi_vector_path': os.path.join(DATA, 'aoi.gpkg'),
     'cc_method': 'factors',  # or 'intensity'
