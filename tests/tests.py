@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import unittest
 
 import pygeoprocessing
@@ -45,7 +46,8 @@ TEST_KWARGS = {
     'cc_method': 'factors',  # or 'intensity'
 
     # Calibration tool takes modified type (list)
-    'ref_eto_raster_path': glob.glob(os.path.join(DATA, 'ref_et*.tif'))[0],
+    #'ref_eto_table': glob.glob(os.path.join(DATA, 'ref_et*.tif'))[0],
+    'ref_eto_table': os.path.join(DATA, 'ref_eto.csv'),
     't_ref': glob.glob(os.path.join(DATA, 'T*.tif'))[0],  # CALTOOL: takes list
 
     # nonstandard args, for the calibration tool
@@ -61,6 +63,14 @@ TEST_KWARGS = {
 class UCMCalibrationPluginTests(unittest.TestCase):
     def setUp(self):
         self.workspace = tempfile.mkdtemp()
+
+        with open(TEST_KWARGS['ref_eto_table'], 'w') as ref_eto:
+            ref_eto.write(textwrap.dedent(
+                f"""\
+                eto_path,
+                {os.path.join(DATA, 'ref_et0.tif')},
+                {os.path.join(DATA, 'ref_et1.tif')},
+                """))
 
     def tearDown(self):
         shutil.rmtree(self.workspace)

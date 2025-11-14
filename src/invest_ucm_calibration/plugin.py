@@ -18,7 +18,7 @@ MODEL_SPEC = spec.ModelSpec(
     input_field_order=[
         ['workspace_dir'],
         ['lulc_raster_path', 'aoi_vector_path'],
-        ['cc_method'],
+        ['cc_method', 'ref_eto_table'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -30,7 +30,7 @@ MODEL_SPEC = spec.ModelSpec(
                 "cover type must be assigned a unique integer code."
             ),
             required=True,
-            data_type=int,  # TODO is there a preferred type?
+            data_type=int,  # TODO is there a preferred type for this?
             units=None,
             projected=True,
             projection_units=u.meter,
@@ -50,6 +50,23 @@ MODEL_SPEC = spec.ModelSpec(
                     about=(
                         "Use building intensity as a temperature predictor (for nighttime"
                         " temperatures)."))
+            ]
+        ),
+        spec.CSVInput(
+            id="ref_eto_table",
+            name=gettext("Reference evapotranspiration rasters"),
+            about=gettext("Table of reference evapotranspiration rasters"),
+            index_col="eto_path",
+            columns=[
+                spec.SingleBandRasterInput(
+                    id="eto_path",
+                    name=gettext('Reference evapotranspiration raster'),
+                    about=gettext(
+                        "The path to a raster of reference "
+                        "evapotranspiration values."),
+                    data_type=float,
+                    units=None,
+                ),
             ]
         ),
         # TODO ref_et_raster_filepaths
