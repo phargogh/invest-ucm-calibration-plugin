@@ -67,6 +67,7 @@ TEST_KWARGS = {
     'num_update_logs': 2,
     'initial_solution': '',  # initial values from the model used?  TODO
     'metric': 'RMSE',  # allowed metrics: [R2, MAE, RMSE]
+    'stepsize': 0.3,
 }
 
 

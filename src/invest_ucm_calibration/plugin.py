@@ -20,7 +20,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['lulc_raster_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
         ['t_rasters_table', 't_stations', 'uhi_max'],
-        ['metric'],
+        ['metric', 'stepsize'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -160,8 +160,22 @@ MODEL_SPEC = spec.ModelSpec(
                         "calibration.")),
             ],
         ),
-
-
+        spec.NumberInput(
+            id="stepsize",
+            name="Calibration step size",
+            about=(
+                # Copied from the calibration tool.
+                "Step size in terms of the fraction of each parameter when "
+                "looking to select a neighbor solution for the following "
+                "iteration. The neighbor will be randomly drawn from an "
+                "uniform distribution in the [param - stepsize * param, "
+                "param + stepsize * param] range. For example, with a step "
+                "size of 0.3 and a `t_air_average_radius` of 500 at a given"
+                "iteration, the solution for the next iteration will be "
+                "uniformly sampled from the [350, 650] range."),
+            units=None,
+            expression="float(value) > 0",
+        ),
 
         # TODO ref_et_raster_filepaths
         spec.AOI.model_copy(update=dict(id="aoi_vector_path")),
