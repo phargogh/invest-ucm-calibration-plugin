@@ -20,6 +20,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['lulc_raster_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
         ['t_rasters_table', 't_stations', 'uhi_max'],
+        ['metric'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -138,6 +139,28 @@ MODEL_SPEC = spec.ModelSpec(
             units=u.degree_Celsius,
             expression="value >= 0",
         ),
+        spec.OptionStringInput(
+            id="metric",
+            name=gettext("Metric to optimize"),
+            about=gettext("Target metric to optimize in the calibration."),
+            options=[
+                spec.Option(
+                    key="R2",
+                    about=(
+                        "Maximize the R squared metric during calibration.")),
+                spec.Option(
+                    key="MAE",
+                    about=(
+                        "Minimize the Mean Absolute Error during "
+                        "calibration.")),
+                spec.Option(
+                    key="RMSE",
+                    about=(
+                        "Minimize the root mean squared error during "
+                        "calibration.")),
+            ],
+        ),
+
 
 
         # TODO ref_et_raster_filepaths

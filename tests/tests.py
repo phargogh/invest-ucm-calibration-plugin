@@ -65,7 +65,11 @@ TEST_KWARGS = {
     'station_t_one_day_filepath': os.path.join(DATA, 'station-t-one-day.csv'),
     'num_steps': 2,
     'num_update_logs': 2,
+    'initial_solution': '',  # initial values from the model used?  TODO
+    'metric': 'RMSE',  # allowed metrics: [R2, MAE, RMSE]
 }
+
+
 
 
 class UCMCalibrationPluginTests(unittest.TestCase):
