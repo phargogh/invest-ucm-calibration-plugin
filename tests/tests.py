@@ -46,9 +46,15 @@ TEST_KWARGS = {
     'cc_method': 'factors',  # or 'intensity'
 
     # Calibration tool takes modified type (list)
-    #'ref_eto_table': glob.glob(os.path.join(DATA, 'ref_et*.tif'))[0],
     'ref_eto_table': os.path.join(DATA, 'ref_eto.csv'),
-    't_ref': glob.glob(os.path.join(DATA, 'T*.tif'))[0],  # CALTOOL: takes list
+
+    # t_ref is the reference air temperature. Single value only.
+    't_ref': 20,  # from one of Marti's tests
+    't_raster_filepaths': glob.glob(os.path.join(DATA, 'T*.tif')),
+
+    't_rasters_table': os.path.join(DATA, 't_rasters.csv'),
+
+    'uhi_max': 20,  # from tests
 
     # nonstandard args, for the calibration tool
     'station_t_filepath': os.path.join(DATA, 'station-t.csv'),
@@ -56,7 +62,6 @@ TEST_KWARGS = {
     'station_t_one_day_filepath': os.path.join(DATA, 'station-t-one-day.csv'),
     'num_steps': 2,
     'num_update_logs': 2,
-
 }
 
 
@@ -71,6 +76,16 @@ class UCMCalibrationPluginTests(unittest.TestCase):
                 {os.path.join(DATA, 'ref_et0.tif')},
                 {os.path.join(DATA, 'ref_et1.tif')},
                 """))
+
+        with open(TEST_KWARGS['t_rasters_table'], 'w') as t_rasters:
+            t_rasters.write(textwrap.dedent(
+                f"""\
+                t_raster_date,t_raster_path,
+                23-07-2020,{os.path.join(DATA, '_T0.tif')},
+                01-01-2021,{os.path.join(DATA, '_T1.tif')},
+                """))
+
+
 
     def tearDown(self):
         shutil.rmtree(self.workspace)

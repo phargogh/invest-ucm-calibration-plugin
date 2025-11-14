@@ -19,6 +19,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['workspace_dir'],
         ['lulc_raster_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
+        ['t_rasters_table'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -66,6 +67,32 @@ MODEL_SPEC = spec.ModelSpec(
                         "evapotranspiration values."),
                     data_type=float,
                     units=None,
+                ),
+            ]
+        ),
+        spec.CSVInput(
+            id="t_rasters_table",
+            name=gettext("Table of temperature rasters"),
+            about=gettext(
+                "Table of temperature rasters and observation dates."),
+            index_col="t_raster_date",
+            columns=[
+                spec.StringInput(
+                    id="t_raster_date",
+                    name=gettext("Date of temperature observation."),
+                    about=gettext(
+                        "The date of temperature observation, in the form "
+                        "DD-MM-YYYY"),
+                    regexp="[0-3][0-9]-[0-1][0-9]-[1-2][0-9][0-9][0-9]",
+                ),
+                spec.SingleBandRasterInput(
+                    id="t_raster_path",
+                    name=gettext("Temperature raster path"),
+                    about=gettext(
+                        "The path to a raster of air temperatures observed "
+                        "on the associated date."),
+                    data_type=float,
+                    units=u.celsius
                 ),
             ]
         ),
