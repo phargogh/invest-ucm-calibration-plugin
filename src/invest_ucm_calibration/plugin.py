@@ -19,7 +19,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['workspace_dir'],
         ['lulc_raster_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
-        ['t_rasters_table'],
+        ['t_rasters_table', 't_stations', 'uhi_max'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -76,6 +76,7 @@ MODEL_SPEC = spec.ModelSpec(
             about=gettext(
                 "Table of temperature rasters and observation dates."),
             index_col="t_raster_date",
+            required="not t_stations",
             columns=[
                 spec.StringInput(
                     id="t_raster_date",
@@ -84,6 +85,7 @@ MODEL_SPEC = spec.ModelSpec(
                         "The date of temperature observation, in the form "
                         "DD-MM-YYYY"),
                     regexp="[0-3][0-9]-[0-1][0-9]-[1-2][0-9][0-9][0-9]",
+                    expression="str(value)",
                 ),
                 spec.SingleBandRasterInput(
                     id="t_raster_path",
@@ -92,10 +94,52 @@ MODEL_SPEC = spec.ModelSpec(
                         "The path to a raster of air temperatures observed "
                         "on the associated date."),
                     data_type=float,
-                    units=u.celsius
+                    units=u.degree_Celsius,
                 ),
             ]
         ),
+        spec.VectorInput(
+            id="t_stations",
+            name=gettext("Temperature stations vector"),
+            about=gettext(
+                "Spatial vector of temperature observations from stations."),
+            index_col="",
+            required="not t_rasters_table",
+            geometry_types={'POINT'},
+            fields=[
+                spec.StringInput(
+                    id="name",
+                    required=False,
+                    name=gettext("Station name"),
+                    about=gettext("The name of the monitoring station."),
+                ),
+                spec.NumberInput(
+                    id="[DATE]",
+                    required=True,
+                    name=gettext("Temperature recording"),
+                    about=gettext("The date the temperature was recorded."),
+                    units=u.degree_Celsius,
+                    exression="float(value)",
+                ),
+            ],
+            projected=True,  # will this be necessary?
+        ),
+        spec.NumberInput(
+            id="uhi_max",
+            name=gettext("UHI effect"),
+            required=False,  # can be interred from temp rasters
+            about=gettext(
+                "The magnitude of the urban heat island effect, i.e., the difference"
+                " between the rural reference temperature and the maximum temperature"
+                " observed in the city. This model is designed for cases where"
+                " UHI is positive, meaning the urban air temperature is greater"
+                " than the rural reference temperature."
+            ),
+            units=u.degree_Celsius,
+            expression="value >= 0",
+        ),
+
+
         # TODO ref_et_raster_filepaths
         spec.AOI.model_copy(update=dict(id="aoi_vector_path")),
         # T_REFs - numeric or iterable of numbers
@@ -129,6 +173,10 @@ MODEL_SPEC = spec.ModelSpec(
 
 def execute(args):
     pprint.pprint(args)
+
+    #if not args['uhi_max']:
+    #    # Calculate from the max/min observed temps, for each station/date
+    #    pass
 
 
 @validation.invest_validator

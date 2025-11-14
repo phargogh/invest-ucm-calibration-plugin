@@ -6,10 +6,13 @@ import tempfile
 import textwrap
 import unittest
 
+import pandas
 import pygeoprocessing
 from invest_ucm_calibration import plugin
 from osgeo import gdal
+from osgeo import ogr
 from osgeo import osr
+from shapely.geometry import Point
 
 CWD = os.path.dirname(__file__)
 DATA = os.path.join(CWD, 'data')
@@ -85,7 +88,44 @@ class UCMCalibrationPluginTests(unittest.TestCase):
                 01-01-2021,{os.path.join(DATA, '_T1.tif')},
                 """))
 
+        # Read in the CSV (which is wgs84).  GDAL _can_ read this
 
+        # src_stations has structure {station_name: {x: value, y: value}}
+        src_stations = pandas.read_csv(
+            os.path.join(DATA, 'station-locations.csv'),
+            index_col=0).to_dict(orient='index')
+
+        # station_to_data has structure: {station_name: {date: temp_value}}
+        station_t_df = pandas.read_csv(
+            os.path.join(DATA, 'station-t.csv'), index_col=0)
+        station_t_data = station_t_df.to_dict()
+
+        wgs84_srs = osr.SpatialReference()
+        wgs84_srs.ImportFromEPSG(4326)
+
+        geoms = []
+        attributes = []
+        fields = {'name': ogr.OFTString}
+        for fieldname in station_t_df.index:
+            fields[str(fieldname)] = ogr.OFTReal
+
+        for station_name, geom in src_stations.items():
+            geoms.append(Point(geom['x'], geom['y']))
+            field_data = {
+                'name': station_name,
+            }
+
+            for date, temp in station_t_data[station_name].items():
+                field_data[str(date)] = temp
+
+            attributes.append(field_data)
+
+        new_vector_path = os.path.join(DATA, 'stations.geojson')
+        if os.path.exists(new_vector_path):
+            os.remove(new_vector_path)  # driver won't overwrite files.
+        pygeoprocessing.shapely_geometry_to_vector(
+            geoms, new_vector_path, wgs84_srs.ExportToWkt(), 'GeoJSON', fields,
+            attributes, ogr.wkbPoint)
 
     def tearDown(self):
         shutil.rmtree(self.workspace)
