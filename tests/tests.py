@@ -68,6 +68,7 @@ TEST_KWARGS = {
     'initial_solution': '',  # initial values from the model used?  TODO
     'metric': 'RMSE',  # allowed metrics: [R2, MAE, RMSE]
     'stepsize': 0.3,
+    'exclude_zero_kernel_dist': True,
 }
 
 

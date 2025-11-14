@@ -20,7 +20,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['lulc_raster_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
         ['t_rasters_table', 't_stations', 'uhi_max'],
-        ['metric', 'stepsize'],
+        ['metric', 'stepsize', 'exclude_zero_kernel_dist'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -176,6 +176,17 @@ MODEL_SPEC = spec.ModelSpec(
             units=None,
             expression="float(value) > 0",
         ),
+        spec.BooleanInput(
+            id="exclude_zero_kernel_dist",
+            name=gettext("Exclude zero-size kernels"),
+            about=gettext(
+                "Whether the calibration should consider parameters that "
+                "lead to decay functions with a kernel distance of zero "
+                "pixels (i.e., `t_air_average_radius` or "
+                "`green_area_cooling_distance` lower than half the LULC pixel "
+                "resolution)."),
+        ),
+
 
         # TODO ref_et_raster_filepaths
         spec.AOI.model_copy(update=dict(id="aoi_vector_path")),
