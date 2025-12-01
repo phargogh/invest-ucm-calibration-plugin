@@ -241,7 +241,11 @@ MODEL_SPEC = spec.ModelSpec(
 def execute(args):
     calibrator_defaults = {}
     for attrname in dir(defaults):
-        print(attrname)
+        if not attrname.startswith('DEFAULT_'):
+            continue
+        value = getattr(defaults, attrname)
+        calibrator_defaults[attrname.lower().replace('default_', '')] = value
+
     calibrator_args = {}
     calibrator_args.update({
         'dst_filepath': os.path.join(
@@ -249,6 +253,7 @@ def execute(args):
     })
     pprint.pprint(args)
     pprint.pprint(calibrator_args)
+    pprint.pprint(calibrator_defaults)
 
     #if not args['uhi_max']:
     #    # Calculate from the max/min observed temps, for each station/date
