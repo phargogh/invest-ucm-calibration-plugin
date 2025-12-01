@@ -2,6 +2,7 @@ import logging
 import os
 import pprint
 
+from invest_ucm_calibration import settings as defaults
 from natcap.invest import gettext
 from natcap.invest import spec
 from natcap.invest import utils
@@ -193,7 +194,7 @@ MODEL_SPEC = spec.ModelSpec(
             name=gettext("Number of Calibration Steps"),
             about=gettext(
                 "Number of steps in the simulated annealing procedure. "
-                "Defaults to TODO"),
+                f"Defaults to {defaults.DEFAULT_NUM_STEPS}"),
             expression="int(value) > 0",
         ),
         spec.IntegerInput(
@@ -238,6 +239,9 @@ MODEL_SPEC = spec.ModelSpec(
 
 
 def execute(args):
+    calibrator_defaults = {}
+    for attrname in dir(defaults):
+        print(attrname)
     calibrator_args = {}
     calibrator_args.update({
         'dst_filepath': os.path.join(
