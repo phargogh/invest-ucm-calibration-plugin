@@ -1,4 +1,5 @@
 import logging
+import os
 import pprint
 
 from natcap.invest import gettext
@@ -21,6 +22,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['cc_method', 'ref_eto_table'],
         ['t_rasters_table', 't_stations', 'uhi_max'],
         ['metric', 'stepsize', 'exclude_zero_kernel_dist'],
+        ['num_steps', 'num_update_logs'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -186,7 +188,23 @@ MODEL_SPEC = spec.ModelSpec(
                 "`green_area_cooling_distance` lower than half the LULC pixel "
                 "resolution)."),
         ),
-
+        spec.IntegerInput(
+            id="num_steps",
+            name=gettext("Number of Calibration Steps"),
+            about=gettext(
+                "Number of steps in the simulated annealing procedure. "
+                "Defaults to TODO"),
+            expression="int(value) > 0",
+        ),
+        spec.IntegerInput(
+            id="num_update_logs",
+            name=gettext("Number of updates logged"),
+            about=gettext(
+                "The number of updates to log during simulated annealing. "
+                "If this number is the same as the number of steps, then "
+                "each iteration will be logged"),
+            expression="int(value) > 0",
+        ),
 
         # TODO ref_et_raster_filepaths
         spec.AOI.model_copy(update=dict(id="aoi_vector_path")),
@@ -220,7 +238,13 @@ MODEL_SPEC = spec.ModelSpec(
 
 
 def execute(args):
+    calibrator_args = {}
+    calibrator_args.update({
+        'dst_filepath': os.path.join(
+            args['workspace_dir'], 'calibration-results.json'),
+    })
     pprint.pprint(args)
+    pprint.pprint(calibrator_args)
 
     #if not args['uhi_max']:
     #    # Calculate from the max/min observed temps, for each station/date
