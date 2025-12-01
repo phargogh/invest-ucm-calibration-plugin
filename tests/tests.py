@@ -8,7 +8,7 @@ import unittest
 
 import pandas
 import pygeoprocessing
-from invest_ucm_calibration import plugin
+from invest_ucm_calibration_plugin import plugin
 from osgeo import gdal
 from osgeo import ogr
 from osgeo import osr
