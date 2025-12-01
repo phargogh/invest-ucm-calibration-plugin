@@ -7,6 +7,7 @@ import textwrap
 import unittest
 
 import pandas
+import pandas.testing
 import pygeoprocessing
 from invest_ucm_calibration_plugin import plugin
 from osgeo import gdal
@@ -142,6 +143,7 @@ class UCMCalibrationPluginTests(unittest.TestCase):
             'lulc_raster_path': 'foo',
             'cc_method': 'intensity',
             'aoi_vector_filepath': '',
+            't_stations': os.path.join(DATA, 'stations.geojson'),
         }
         plugin.execute(args)
 
@@ -149,3 +151,21 @@ class UCMCalibrationPluginTests(unittest.TestCase):
         args = TEST_KWARGS.copy()
         args['workspace_dir'] = self.workspace
         self.assertEqual([], plugin.validate(args))
+
+    def test_vector_to_csvs(self):
+        t_stations_vector_path = os.path.join(DATA, 'stations.geojson')
+        target_stations_csv = os.path.join(
+            self.workspace, 'target_stations.csv')
+        target_temps_csv = os.path.join(
+            self.workspace, 'target_temps.csv')
+
+        # run the function
+        plugin._t_stations_vector_to_csv(
+            t_stations_vector_path, target_stations_csv, target_temps_csv)
+
+        for reference_file, new_file in [
+                (TEST_KWARGS['station_t_filepath'], target_temps_csv),
+                (TEST_KWARGS['station_locations'], target_stations_csv)]:
+            ref_df = pandas.read_csv(reference_file)
+            new_df = pandas.read_csv(new_file)
+            pandas.testing.assert_frame_equal(ref_df, new_df)

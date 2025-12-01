@@ -1,6 +1,8 @@
+import collections
 import logging
 import os
 import pprint
+import re
 
 from invest_ucm_calibration import settings as defaults
 from natcap.invest import gettext
@@ -8,6 +10,7 @@ from natcap.invest import spec
 from natcap.invest import utils
 from natcap.invest import validation
 from natcap.invest.unit_registry import u
+from osgeo import gdal
 
 LOGGER = logging.getLogger(__name__)
 
@@ -255,9 +258,53 @@ def execute(args):
     pprint.pprint(calibrator_args)
     pprint.pprint(calibrator_defaults)
 
+    # Translate t_stations vector to the CSV expected by the plugin
+    # TODO: use file registry
+    # TODO: use taskgraph
+    stations_loc_csv = os.path.join(args['workspace_dir'], 'station-loc.csv')
+    stations_temps_csv = os.path.join(
+        args['workspace_dir'], 'station-temps.csv')
+    _t_stations_vector_to_csv(
+        args['t_stations'], stations_loc_csv, stations_temps_csv)
+
     #if not args['uhi_max']:
     #    # Calculate from the max/min observed temps, for each station/date
     #    pass
+
+
+def _t_stations_vector_to_csv(
+        t_stations_vector_path, t_stations_locations_csv_path,
+        t_stations_temps_csv_path):
+    vector = gdal.OpenEx(t_stations_vector_path)
+    layer = vector.GetLayer()
+
+    # TODO: do I need to transform the points from local projection to WGS84?
+
+    stations = {}  # name: (x, y)
+    temps = collections.defaultdict(dict)  # date: name: temp
+    for feature in layer:
+        geom = feature.GetGeometryRef()
+        name = feature.GetField('name')
+        stations[name] = (geom.GetX(), geom.GetY())
+
+        for datefieldname, field_value in feature.items().items():
+            # Match various forms of date, e.g. YYYY-MM-DD, DD-MM-YYYY
+            if not re.match('[0-9-]+', datefieldname):
+                continue
+            temps[datefieldname][name] = field_value
+
+    with open(t_stations_locations_csv_path, 'w') as station_locations:
+        station_locations.write(",x,y\n")
+        for st_name, (x, y) in stations.items():
+            station_locations.write(f"{st_name},{x},{y}\n")
+
+    with open(t_stations_temps_csv_path, 'w') as station_temps:
+        station_names = list(stations.keys())
+        names_header = ','.join(station_names)
+        station_temps.write(f',{names_header}\n')
+        for date, station_data in temps.items():
+            temps_data = ','.join(str(station_data[name]) for name in station_names)
+            station_temps.write(f'{date},{temps_data}\n')
 
 
 @validation.invest_validator
