@@ -26,7 +26,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['cc_method', 'ref_eto_table'],
         ['t_rasters_table', 't_stations', 'uhi_max'],
         ['metric', 'stepsize', 'exclude_zero_kernel_dist'],
-        ['num_steps', 'num_update_logs'],
+        ['num_steps', 'num_update_logs', 'initial_solution'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -59,6 +59,22 @@ MODEL_SPEC = spec.ModelSpec(
                         "Use building intensity as a temperature predictor (for nighttime"
                         " temperatures)."))
             ]
+        ),
+        spec.StringInput(
+            id="initial_solution",
+            name=gettext("Initial Solution"),
+            about=gettext(
+                "Sequence with the parameter values used as initial "
+                "solution, which can either be of the form "
+                "(t_air_average_radius, green_area_cooling_distance, "
+                "cc_weight_shade, cc_weight_albedo, cc_weight_eti) when "
+                "`cc_method` is 'factors', or (t_air_average_radius, "
+                "green_area_cooling_distance) when `cc_method` is "
+                "'intensity'. If not provided, the default values of the "
+                "urban cooling model will be used."),
+            regexp="[0-9., ]+",
+            expression="float(v.strip()) for v in value.split(',')",
+            required=False,
         ),
         spec.CSVInput(
             id="ref_eto_table",
@@ -266,6 +282,15 @@ def execute(args):
         args['workspace_dir'], 'station-temps.csv')
     _t_stations_vector_to_csv(
         args['t_stations'], stations_loc_csv, stations_temps_csv)
+    calibrator_args['station_locations'] = stations_loc_csv
+    calibrator_args['station_t_filepath'] = stations_temps_csv
+
+    # If not provided, default model args will be used.
+    # TODO: How does the calibration tool actually handle this??
+    if 'initial_solution' in args and args['initial_solution']:
+        calibrator_args['initial_solution'] = [
+            float(v.strip) for v in args['initial_solution'].split(',')]
+
 
     #if not args['uhi_max']:
     #    # Calculate from the max/min observed temps, for each station/date
