@@ -140,7 +140,9 @@ class UCMCalibrationPluginTests(unittest.TestCase):
     def test_execute(self):
         args = {
             'workspace_dir': self.workspace,
-            'lulc_raster_path': 'foo',
+            'lulc_raster_path': TEST_KWARGS['lulc_raster_path'],
+            'biophysical_table_path': TEST_KWARGS['biophysical_table_path'],
+            'ref_eto_table': TEST_KWARGS['ref_eto_table'],
             'cc_method': 'intensity',
             'aoi_vector_filepath': '',
             't_stations': os.path.join(DATA, 'stations.geojson'),

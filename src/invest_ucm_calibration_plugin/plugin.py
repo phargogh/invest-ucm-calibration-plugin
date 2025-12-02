@@ -4,7 +4,8 @@ import os
 import pprint
 import re
 
-from invest_ucm_calibration import settings as defaults
+from invest_ucm_calibration import settings as ucm_cal_defaults
+from invest_ucm_calibration.cli import main as ucm_cal_main
 from natcap.invest import gettext
 from natcap.invest import spec
 from natcap.invest import utils
@@ -22,7 +23,7 @@ MODEL_SPEC = spec.ModelSpec(
     module_name=__name__,
     input_field_order=[
         ['workspace_dir'],
-        ['lulc_raster_path', 'aoi_vector_path'],
+        ['lulc_raster_path', 'biophysical_table_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
         ['t_rasters_table', 't_stations', 'uhi_max'],
         ['metric', 'stepsize', 'exclude_zero_kernel_dist'],
@@ -43,6 +44,65 @@ MODEL_SPEC = spec.ModelSpec(
             projected=True,
             projection_units=u.meter,
         ),
+        spec.CSVInput(
+            id="biophysical_table_path",
+            name=gettext("biophysical table"),
+            about=gettext(
+                "A table mapping each LULC code to biophysical data for that "
+                "LULC class. All values in the LULC raster must have "
+                "corresponding entries in this table."
+            ),
+            columns=[
+                spec.LULC_TABLE_COLUMN,
+                spec.NumberInput(
+                    id="kc",
+                    about=gettext("Crop coefficient for this LULC class."),
+                    units=u.none
+                ),
+                spec.BooleanInput(
+                    id="green_area",
+                    about=gettext(
+                        "Enter 1 to indicate that the LULC is considered a "
+                        "green area. Enter 0 to indicate that the LULC is "
+                        "not considered a green area."
+                    )
+                ),
+                spec.RatioInput(
+                    id="shade",
+                    about=(
+                        "The proportion of area in this LULC class that is "
+                        "covered by tree canopy at least 2 meters high. "
+                        "Required if the 'factors' option is selected for the "
+                        "Cooling Capacity Calculation Method."
+                    ),
+                    required="cc_method == 'factors'",
+                    units=None
+                ),
+                spec.RatioInput(
+                    id="albedo",
+                    about=(
+                        "The proportion of solar radiation that is directly "
+                        "reflected by this LULC class. Required if the "
+                        "'factors' option is selected for the Cooling "
+                        "Capacity Calculation Method."
+                    ),
+                    required="cc_method == 'factors'",
+                    units=None
+                ),
+                spec.RatioInput(
+                    id="building_intensity",
+                    about=(
+                        "The ratio of building floor area to footprint area, "
+                        "with all values in this column normalized between 0 "
+                        "and 1. Required if the 'intensity' option is "
+                        "selected for the Cooling Capacity Calculation Method."
+                    ),
+                    required="cc_method == 'intensity'",
+                    units=None
+                )
+            ],
+            index_col="lucode"
+        ),
         spec.OptionStringInput(
             id="cc_method",
             name=gettext("cooling capacity calculation method"),
@@ -51,13 +111,13 @@ MODEL_SPEC = spec.ModelSpec(
                 spec.Option(
                     key="factors",
                     about=(
-                        "Use the weighted shade, albedo, and ETI factors as a temperature"
-                        " predictor (for daytime temperatures).")),
+                        "Use the weighted shade, albedo, and ETI factors as a "
+                        "temperature predictor (for daytime temperatures).")),
                 spec.Option(
                     key="intensity",
                     about=(
-                        "Use building intensity as a temperature predictor (for nighttime"
-                        " temperatures)."))
+                        "Use building intensity as a temperature predictor "
+                        "(for nighttime temperatures)."))
             ]
         ),
         spec.StringInput(
@@ -80,7 +140,6 @@ MODEL_SPEC = spec.ModelSpec(
             id="ref_eto_table",
             name=gettext("Reference evapotranspiration rasters"),
             about=gettext("Table of reference evapotranspiration rasters"),
-            index_col="eto_path",
             columns=[
                 spec.SingleBandRasterInput(
                     id="eto_path",
@@ -88,7 +147,7 @@ MODEL_SPEC = spec.ModelSpec(
                     about=gettext(
                         "The path to a raster of reference "
                         "evapotranspiration values."),
-                    data_type=float,
+                    data_type=str,
                     units=None,
                 ),
             ]
@@ -213,7 +272,7 @@ MODEL_SPEC = spec.ModelSpec(
             name=gettext("Number of Calibration Steps"),
             about=gettext(
                 "Number of steps in the simulated annealing procedure. "
-                f"Defaults to {defaults.DEFAULT_NUM_STEPS}"),
+                f"Defaults to {ucm_cal_defaults.DEFAULT_NUM_STEPS}"),
             expression="int(value) > 0",
         ),
         spec.IntegerInput(
@@ -259,10 +318,10 @@ MODEL_SPEC = spec.ModelSpec(
 
 def execute(args):
     calibrator_defaults = {}
-    for attrname in dir(defaults):
+    for attrname in dir(ucm_cal_defaults):
         if not attrname.startswith('DEFAULT_'):
             continue
-        value = getattr(defaults, attrname)
+        value = getattr(ucm_cal_defaults, attrname)
         calibrator_defaults[attrname.lower().replace('default_', '')] = value
 
     calibrator_args = {}
@@ -274,6 +333,20 @@ def execute(args):
     pprint.pprint(calibrator_args)
     pprint.pprint(calibrator_defaults)
 
+    # Some arguments can be copied directly over to the calibrator args
+    for plugin_key, calibrator_key in [
+            ('lulc_raster_path', 'lulc_raster_filepath'),
+            ('biophysical_table_path', 'biophysical_table_filepath'),
+            ('cc_method', 'cc_method'),]:
+        calibrator_args[calibrator_key] = args[plugin_key]
+    # Translate the Ref ET0 vector to the lists that the calibrator expects.
+    # TODO: use InVEST's table loading
+    et0_df = MODEL_SPEC.get_input('ref_eto_table').get_validated_dataframe(
+        args['ref_eto_table'])
+    # The calibrator CLI expects a comma-separated string list of paths
+    calibrator_args['ref_et_raster_filepaths'] = ','.join(list(
+        et0_df['eto_path'].values))
+
     # Translate t_stations vector to the CSV expected by the plugin
     # TODO: use file registry
     # TODO: use taskgraph
@@ -282,14 +355,18 @@ def execute(args):
         args['workspace_dir'], 'station-temps.csv')
     _t_stations_vector_to_csv(
         args['t_stations'], stations_loc_csv, stations_temps_csv)
-    calibrator_args['station_locations'] = stations_loc_csv
+    calibrator_args['station_locations_filepath'] = stations_loc_csv
     calibrator_args['station_t_filepath'] = stations_temps_csv
 
     # If not provided, default model args will be used.
     # TODO: How does the calibration tool actually handle this??
+    #       Do we need to provide an initial solution or will the calibrator do
+    #       it for us?
     if 'initial_solution' in args and args['initial_solution']:
         calibrator_args['initial_solution'] = [
             float(v.strip) for v in args['initial_solution'].split(',')]
+
+    ucm_cal_main.cli(**calibrator_args)
 
 
     #if not args['uhi_max']:
