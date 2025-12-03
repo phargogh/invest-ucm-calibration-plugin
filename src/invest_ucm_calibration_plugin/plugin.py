@@ -8,10 +8,12 @@ from invest_ucm_calibration import settings as ucm_cal_defaults
 from invest_ucm_calibration.cli import main as ucm_cal_main
 from natcap.invest import gettext
 from natcap.invest import spec
-from natcap.invest import utils
 from natcap.invest import validation
 from natcap.invest.unit_registry import u
 from osgeo import gdal
+
+# TODO: should I be using the calibration tool CLI or the object?
+#       CLI controls logging, warnings
 
 LOGGER = logging.getLogger(__name__)
 
@@ -211,11 +213,12 @@ MODEL_SPEC = spec.ModelSpec(
             name=gettext("UHI effect"),
             required=False,  # can be interred from temp rasters
             about=gettext(
-                "The magnitude of the urban heat island effect, i.e., the difference"
-                " between the rural reference temperature and the maximum temperature"
-                " observed in the city. This model is designed for cases where"
-                " UHI is positive, meaning the urban air temperature is greater"
-                " than the rural reference temperature."
+                "The magnitude of the urban heat island effect, i.e., the "
+                "difference between the rural reference temperature and the "
+                "maximum temperature observed in the city. This model is "
+                "designed for cases where UHI is positive, meaning the urban "
+                "air temperature is greater than the rural reference "
+                "temperature."
             ),
             units=u.degree_Celsius,
             expression="value >= 0",
@@ -368,10 +371,9 @@ def execute(args):
 
     ucm_cal_main.cli(**calibrator_args)
 
-
-    #if not args['uhi_max']:
-    #    # Calculate from the max/min observed temps, for each station/date
-    #    pass
+    # if not args['uhi_max']:
+    #     # Calculate from the max/min observed temps, for each station/date
+    #     pass
 
 
 def _t_stations_vector_to_csv(
