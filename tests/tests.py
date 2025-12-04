@@ -53,12 +53,13 @@ TEST_KWARGS = {
     'ref_eto_table': os.path.join(DATA, 'ref_eto.csv'),
 
     # t_ref is the reference air temperature. Single value only.
-    't_ref': 20,  # from one of Marti's tests
+    't_ref': 20,  # from one of Marti's tests TODO: Also test for list of vals
     't_raster_filepaths': glob.glob(os.path.join(DATA, 'T*.tif')),
 
     't_rasters_table': os.path.join(DATA, 't_rasters.csv'),
 
-    'uhi_max': 20,  # from tests
+    'uhi_maxs': [20],  # tests have scalar 20
+    # TODO also test for list of floats, also list of strings.
 
     # nonstandard args, for the calibration tool
     'station_t_filepath': os.path.join(DATA, 'station-t.csv'),

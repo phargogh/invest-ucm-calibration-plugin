@@ -391,8 +391,14 @@ def execute(args):
     #       it for us?
     for key in ('initial_solution', 't_refs', 'uhi_maxs'):
         if key in args and args[key]:
-            calibrator_args[key] = [
-                float(v.strip) for v in args[key].split(',')]
+            value = args[key]
+            if isinstance(value, str):
+                value = value.split(',')
+            elif isinstance(value, (int, float)):
+                value = [value]
+            # float() will chomp leading/trailing whitespace if present
+            calibrator_args[key] = [float(v) for v in value]
+
     ucm_cal_main.cli(**calibrator_args)
 
     # if not args['uhi_max']:
