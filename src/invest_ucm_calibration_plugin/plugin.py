@@ -29,7 +29,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['cc_method', 'ref_eto_table'],
         ['t_refs', 't_rasters_table', 't_stations', 'uhi_maxs'],
         ['metric', 'stepsize', 'exclude_zero_kernel_dist'],
-        ['num_steps', 'num_update_logs', 'initial_solution'],
+        ['num_steps', 'num_update_logs', 'initial_solution', 'extra_ucm_args'],
     ],
     inputs=[
         spec.WORKSPACE,
@@ -312,6 +312,16 @@ MODEL_SPEC = spec.ModelSpec(
                 "each iteration will be logged"),
             expression="int(value) > 0",
         ),
+        spec.StringInput(
+            id="extra_ucm_args",
+            name=gettext("Extra UCM Model Args"),
+            about=gettext(
+                'Other keyword arguments to be passed to the execute method '
+                'of the urban cooling model, as a sequence of "key:value" '
+                'pairs, separated by commas.'
+            ),
+            required=False,
+        ),
 
         # TODO ref_et_raster_filepaths
         # T_REFs - numeric or iterable of numbers
@@ -409,6 +419,26 @@ def execute(args):
                 value = [value]
             # float() will chomp leading/trailing whitespace if present
             calibrator_args[key] = [float(v) for v in value]
+
+    # TODO: is any validation needed to assert that the initial solution
+    # matches the number of params needed?
+
+    # Not obviously documented and not in the tests, but the calibration tool
+    # appears to expect that this is a dict if it is provided at all.
+    if 'extra_ucm_args' in args:
+        if isinstance(args['extra_ucm_args'], str):
+            extra_args = {}
+            for param in args['extra_ucm_args'].split(','):
+                key, value = param.split(':')
+                extra_args[key] = value
+        elif isinstance(args['extra_ucm_args'], dict):
+            # If the user just passes a dict, just use it.
+            extra_args = args['extra_ucm_args']
+        else:
+            args_type = type(args['extra_ucm_args'])
+            raise ValueError(
+                f"Invalid type for extra UCM args: {args_type}")
+        calibrator_args['extra_ucm_args'] = extra_args
 
     ucm_cal_main.cli(**calibrator_args)
 

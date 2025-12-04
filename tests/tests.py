@@ -71,6 +71,7 @@ TEST_KWARGS = {
     'metric': 'RMSE',  # allowed metrics: [R2, MAE, RMSE]
     'stepsize': 0.3,
     'exclude_zero_kernel_dist': True,
+    'extra_ucm_args': None,  # test key:value parsing, also dict of opts
 }
 
 
