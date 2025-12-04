@@ -367,8 +367,6 @@ def execute(args):
         'dst_filepath': os.path.join(
             args['workspace_dir'], 'calibration-results.json'),
     })
-    pprint.pprint(args)
-    pprint.pprint(calibrator_args)
 
     # Some arguments can be copied directly over to the calibrator args
     for plugin_key, calibrator_key in [
@@ -379,16 +377,8 @@ def execute(args):
             ('num_steps', 'num_steps'),
             ('num_update_logs', 'num_update_logs'),
             ('cc_method', 'cc_method'),]:
-        required = MODEL_SPEC.get_input(plugin_key).required
-        try:
-            calibrator_args[calibrator_key] = args[plugin_key]
-        except KeyError:
-            # If arg is missing but it's not required, just skip it.
-            # Otherwise, not a problem.
-            if not required:
-                pass
-            else:
-                raise
+        if args[plugin_key]:
+            calibrator_args[calibrator_key]
 
     # Translate the Ref ET0 vector to the lists that the calibrator expects.
     # TODO: use InVEST's table loading
@@ -399,9 +389,7 @@ def execute(args):
         et0_df['eto_path'].values))
 
     # Translate t_stations vector to the CSV expected by the plugin
-    # TODO: use file registry
-    # TODO: use taskgraph
-    if 't_stations' in args:
+    if args['t_stations']:
         stations_loc_csv = os.path.join(
             args['workspace_dir'], 'station-loc.csv')
         stations_temps_csv = os.path.join(
