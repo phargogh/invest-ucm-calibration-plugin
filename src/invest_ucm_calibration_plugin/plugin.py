@@ -27,7 +27,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['workspace_dir'],
         ['lulc_raster_path', 'biophysical_table_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
-        ['t_refs', 't_rasters_table', 't_stations', 'uhi_max'],
+        ['t_refs', 't_rasters_table', 't_stations', 'uhi_maxs'],
         ['metric', 'stepsize', 'exclude_zero_kernel_dist'],
         ['num_steps', 'num_update_logs', 'initial_solution'],
     ],
@@ -228,8 +228,8 @@ MODEL_SPEC = spec.ModelSpec(
             projected=True,  # will this be necessary?
         ),
         spec.NumberInput(
-            id="uhi_max",
-            name=gettext("UHI effect"),
+            id="uhi_maxs",
+            name=gettext("UHI effects"),
             required=False,  # can be interred from temp rasters
             about=gettext(
                 "The magnitude of the urban heat island effect, i.e., the "
@@ -237,10 +237,16 @@ MODEL_SPEC = spec.ModelSpec(
                 "maximum temperature observed in the city. This model is "
                 "designed for cases where UHI is positive, meaning the urban "
                 "air temperature is greater than the rural reference "
-                "temperature."
+                "temperature.  If not provided, the difference between the "
+                "minimum and maximum observed temperature will be used, "
+                "calculated from input temperature rasters or station "
+                "measurements, for each respective date if calibrating for "
+                "multiple dates.  If providing multiple UHI values, such as "
+                "for multiple dates, UHI values must be comma-separated."
             ),
             units=u.degree_Celsius,
-            expression="value >= 0",
+            regexp="[0-9., ]+",
+            expression="all(float(v.strip()) > 0 for v in value.split(','))",
         ),
         spec.OptionStringInput(
             id="metric",
@@ -383,7 +389,7 @@ def execute(args):
     # TODO: How does the calibration tool actually handle initial_solution??
     #       Do we need to provide an initial solution or will the calibrator do
     #       it for us?
-    for key in ('initial_solution', 't_refs'):
+    for key in ('initial_solution', 't_refs', 'uhi_maxs'):
         if key in args and args[key]:
             calibrator_args[key] = [
                 float(v.strip) for v in args[key].split(',')]
