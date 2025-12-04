@@ -378,7 +378,7 @@ def execute(args):
             ('num_update_logs', 'num_update_logs'),
             ('cc_method', 'cc_method'),]:
         if args[plugin_key]:
-            calibrator_args[calibrator_key]
+            calibrator_args[calibrator_key] = args[plugin_key]
 
     # Translate the Ref ET0 vector to the lists that the calibrator expects.
     # TODO: use InVEST's table loading
