@@ -122,22 +122,6 @@ MODEL_SPEC = spec.ModelSpec(
                         "(for nighttime temperatures)."))
             ]
         ),
-        spec.StringInput(
-            id="initial_solution",
-            name=gettext("Initial Solution"),
-            about=gettext(
-                "Sequence with the parameter values used as initial "
-                "solution, which can either be of the form "
-                "(t_air_average_radius, green_area_cooling_distance, "
-                "cc_weight_shade, cc_weight_albedo, cc_weight_eti) when "
-                "`cc_method` is 'factors', or (t_air_average_radius, "
-                "green_area_cooling_distance) when `cc_method` is "
-                "'intensity'. If not provided, the default values of the "
-                "urban cooling model will be used."),
-            regexp="[0-9., ]+",
-            expression="float(v.strip()) for v in value.split(',')",
-            required=False,
-        ),
         spec.CSVInput(
             id="ref_eto_table",
             name=gettext("Reference evapotranspiration rasters"),
@@ -153,6 +137,41 @@ MODEL_SPEC = spec.ModelSpec(
                     units=None,
                 ),
             ]
+        ),
+        # If an AOI is not provided, the calibration tool uses the bounds of
+        # the LULC instead.
+        spec.AOI.model_copy(update=dict(id="aoi_vector_path", optional=True)),
+
+        spec.StringInput(
+            id="t_refs",
+            name=gettext("Reference Air Temperatures"),
+            about=gettext(
+                "Reference air temperature or temperatures.  If multiple "
+                "temperatures are provided, they must be comma-separated."
+            ),
+            regexp="[0-9., ]+",
+            expression="float(v.strip()) for v in value.split(',')",
+            # If not provided, the calibration tool uses the minimum observed
+            # temperature, either from raster or station measurements,
+            # depending on which sets of inputs are provided.
+            optional=True,
+            units=u.degree_Celsius,
+        ),
+        spec.StringInput(
+            id="initial_solution",
+            name=gettext("Initial Solution"),
+            about=gettext(
+                "Sequence with the parameter values used as initial "
+                "solution, which can either be of the form "
+                "(t_air_average_radius, green_area_cooling_distance, "
+                "cc_weight_shade, cc_weight_albedo, cc_weight_eti) when "
+                "`cc_method` is 'factors', or (t_air_average_radius, "
+                "green_area_cooling_distance) when `cc_method` is "
+                "'intensity'. If not provided, the default values of the "
+                "urban cooling model will be used."),
+            regexp="[0-9., ]+",
+            expression="float(v.strip()) for v in value.split(',')",
+            required=False,
         ),
         spec.CSVInput(
             id="t_rasters_table",
@@ -289,7 +308,6 @@ MODEL_SPEC = spec.ModelSpec(
         ),
 
         # TODO ref_et_raster_filepaths
-        spec.AOI.model_copy(update=dict(id="aoi_vector_path")),
         # T_REFs - numeric or iterable of numbers
     ],
     outputs=[
@@ -368,7 +386,6 @@ def execute(args):
     if 'initial_solution' in args and args['initial_solution']:
         calibrator_args['initial_solution'] = [
             float(v.strip) for v in args['initial_solution'].split(',')]
-
     ucm_cal_main.cli(**calibrator_args)
 
     # if not args['uhi_max']:
