@@ -285,16 +285,19 @@ MODEL_SPEC = spec.ModelSpec(
                 "uniformly sampled from the [350, 650] range."),
             units=None,
             expression="float(value) > 0",
+            required=False,
         ),
         spec.BooleanInput(
             id="exclude_zero_kernel_dist",
             name=gettext("Exclude zero-size kernels"),
+            required=False,
             about=gettext(
                 "Whether the calibration should consider parameters that "
                 "lead to decay functions with a kernel distance of zero "
                 "pixels (i.e., `t_air_average_radius` or "
                 "`green_area_cooling_distance` lower than half the LULC pixel "
-                "resolution)."),
+                "resolution)."
+            ),
         ),
         spec.IntegerInput(
             id="num_steps",
@@ -303,6 +306,7 @@ MODEL_SPEC = spec.ModelSpec(
                 "Number of steps in the simulated annealing procedure. "
                 f"Defaults to {ucm_cal_defaults.DEFAULT_NUM_STEPS}"),
             expression="int(value) > 0",
+            required=False,
         ),
         spec.IntegerInput(
             id="num_update_logs",
@@ -364,6 +368,7 @@ def execute(args):
 
     calibrator_args = {}
     calibrator_args.update({
+        # Always write out the calibration results.
         'dst_filepath': os.path.join(
             args['workspace_dir'], 'calibration-results.json'),
     })
@@ -375,8 +380,22 @@ def execute(args):
     for plugin_key, calibrator_key in [
             ('lulc_raster_path', 'lulc_raster_filepath'),
             ('biophysical_table_path', 'biophysical_table_filepath'),
+            ('stepsize', 'stepsize'),
+            ('exclude_zero_kernel_dist', 'exclude_zero_kernel_dist'),
+            ('num_steps', 'num_steps'),
+            ('num_update_logs', 'num_update_logs'),
             ('cc_method', 'cc_method'),]:
-        calibrator_args[calibrator_key] = args[plugin_key]
+        required = MODEL_SPEC.get_input(plugin_key).required
+        try:
+            calibrator_args[calibrator_key] = args[plugin_key]
+        except KeyError:
+            # If arg is missing but it's not required, just skip it.
+            # Otherwise, not a problem.
+            if not required:
+                pass
+            else:
+                raise
+
     # Translate the Ref ET0 vector to the lists that the calibrator expects.
     # TODO: use InVEST's table loading
     et0_df = MODEL_SPEC.get_input('ref_eto_table').get_validated_dataframe(
