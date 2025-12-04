@@ -24,7 +24,7 @@ MODEL_SPEC = spec.ModelSpec(
         "https://invest-ucm-calibration.readthedocs.io/en/latest/usage.html"),
     module_name=__name__,
     input_field_order=[
-        ['workspace_dir'],
+        ['workspace_dir', 'results_suffix'],
         ['lulc_raster_path', 'biophysical_table_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
         ['t_refs', 't_rasters_table', 't_stations', 'uhi_maxs'],
@@ -33,6 +33,8 @@ MODEL_SPEC = spec.ModelSpec(
     ],
     inputs=[
         spec.WORKSPACE,
+        spec.SUFFIX,
+        spec.N_WORKERS,
         spec.SingleBandRasterInput(
             id="lulc_raster_path",
             name=gettext("Land use/land cover"),
@@ -327,11 +329,9 @@ MODEL_SPEC = spec.ModelSpec(
             ),
             required=False,
         ),
-
-        # TODO ref_et_raster_filepaths
-        # T_REFs - numeric or iterable of numbers
     ],
     outputs=[
+        spec.TASKGRAPH_CACHE,
     ],
 )
 
@@ -359,12 +359,7 @@ MODEL_SPEC = spec.ModelSpec(
 
 
 def execute(args):
-    calibrator_defaults = {}
-    for attrname in dir(ucm_cal_defaults):
-        if not attrname.startswith('DEFAULT_'):
-            continue
-        value = getattr(ucm_cal_defaults, attrname)
-        calibrator_defaults[attrname.lower().replace('default_', '')] = value
+    args, file_registry, _ = MODEL_SPEC.setup(args)
 
     calibrator_args = {}
     calibrator_args.update({
@@ -374,7 +369,6 @@ def execute(args):
     })
     pprint.pprint(args)
     pprint.pprint(calibrator_args)
-    pprint.pprint(calibrator_defaults)
 
     # Some arguments can be copied directly over to the calibrator args
     for plugin_key, calibrator_key in [
@@ -445,17 +439,18 @@ def execute(args):
 
     # Not obviously documented and not in the tests, but the calibration tool
     # appears to expect that this is a dict if it is provided at all.
-    if 'extra_ucm_args' in args:
-        if isinstance(args['extra_ucm_args'], str):
+    if args['extra_ucm_args']:
+        extra_args = args['extra_ucm_args']
+        if isinstance(extra_args, str):
             extra_args = {}
-            for param in args['extra_ucm_args'].split(','):
+            for param in extra_args.split(','):
                 key, value = param.split(':')
                 extra_args[key] = value
-        elif isinstance(args['extra_ucm_args'], dict):
+        elif isinstance(extra_args, dict):
             # If the user just passes a dict, just use it.
-            extra_args = args['extra_ucm_args']
+            extra_args = extra_args
         else:
-            args_type = type(args['extra_ucm_args'])
+            args_type = type(extra_args)
             raise ValueError(
                 f"Invalid type for extra UCM args: {args_type}")
         calibrator_args['extra_ucm_args'] = extra_args

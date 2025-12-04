@@ -48,3 +48,8 @@ conda_dependencies = [
 # Use this to include any non-python files in your package distribution,
 # such as sample data, or a non-python executable
 #foo = ["data/foo"]
+
+[pytest]
+# Disable error message truncation.
+truncation_limit_lines = 0
+truncation_limit_chars = 0
