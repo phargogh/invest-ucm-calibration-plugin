@@ -68,7 +68,7 @@ TEST_KWARGS = {
     'num_steps': 2,
     'num_update_logs': 2,
     'initial_solution': '',  # initial values from the model used?  TODO
-    'metric': 'RMSE',  # allowed metrics: [R2, MAE, RMSE]
+    'metric': 'RMSE',  # allowed metrics: [R2, MAE, RMSE], optional
     'stepsize': 0.3,
     'exclude_zero_kernel_dist': True,
     'extra_ucm_args': None,  # test key:value parsing, also dict of opts

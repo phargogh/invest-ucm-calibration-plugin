@@ -252,6 +252,7 @@ MODEL_SPEC = spec.ModelSpec(
             id="metric",
             name=gettext("Metric to optimize"),
             about=gettext("Target metric to optimize in the calibration."),
+            required=False,
             options=[
                 spec.Option(
                     key="R2",
