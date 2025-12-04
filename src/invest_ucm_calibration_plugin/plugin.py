@@ -157,6 +157,27 @@ MODEL_SPEC = spec.ModelSpec(
             optional=True,
             units=u.degree_Celsius,
         ),
+        spec.NumberInput(
+            id="uhi_maxs",
+            name=gettext("UHI effects"),
+            required=False,  # can be interred from temp rasters
+            about=gettext(
+                "The magnitude of the urban heat island effect, i.e., the "
+                "difference between the rural reference temperature and the "
+                "maximum temperature observed in the city. This model is "
+                "designed for cases where UHI is positive, meaning the urban "
+                "air temperature is greater than the rural reference "
+                "temperature.  If not provided, the difference between the "
+                "minimum and maximum observed temperature will be used, "
+                "calculated from input temperature rasters or station "
+                "measurements, for each respective date if calibrating for "
+                "multiple dates.  If providing multiple UHI values, such as "
+                "for multiple dates, UHI values must be comma-separated."
+            ),
+            units=u.degree_Celsius,
+            regexp="[0-9., ]+",
+            expression="all(float(v.strip()) > 0 for v in value.split(','))",
+        ),
         spec.StringInput(
             id="initial_solution",
             name=gettext("Initial Solution"),
@@ -226,27 +247,6 @@ MODEL_SPEC = spec.ModelSpec(
                 ),
             ],
             projected=True,  # will this be necessary?
-        ),
-        spec.NumberInput(
-            id="uhi_maxs",
-            name=gettext("UHI effects"),
-            required=False,  # can be interred from temp rasters
-            about=gettext(
-                "The magnitude of the urban heat island effect, i.e., the "
-                "difference between the rural reference temperature and the "
-                "maximum temperature observed in the city. This model is "
-                "designed for cases where UHI is positive, meaning the urban "
-                "air temperature is greater than the rural reference "
-                "temperature.  If not provided, the difference between the "
-                "minimum and maximum observed temperature will be used, "
-                "calculated from input temperature rasters or station "
-                "measurements, for each respective date if calibrating for "
-                "multiple dates.  If providing multiple UHI values, such as "
-                "for multiple dates, UHI values must be comma-separated."
-            ),
-            units=u.degree_Celsius,
-            regexp="[0-9., ]+",
-            expression="all(float(v.strip()) > 0 for v in value.split(','))",
         ),
         spec.OptionStringInput(
             id="metric",
