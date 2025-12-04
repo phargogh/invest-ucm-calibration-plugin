@@ -178,22 +178,6 @@ MODEL_SPEC = spec.ModelSpec(
             regexp="[0-9., ]+",
             expression="all(float(v.strip()) > 0 for v in value.split(','))",
         ),
-        spec.StringInput(
-            id="initial_solution",
-            name=gettext("Initial Solution"),
-            about=gettext(
-                "Sequence with the parameter values used as initial "
-                "solution, which can either be of the form "
-                "(t_air_average_radius, green_area_cooling_distance, "
-                "cc_weight_shade, cc_weight_albedo, cc_weight_eti) when "
-                "`cc_method` is 'factors', or (t_air_average_radius, "
-                "green_area_cooling_distance) when `cc_method` is "
-                "'intensity'. If not provided, the default values of the "
-                "urban cooling model will be used."),
-            regexp="[0-9., ]+",
-            expression="float(v.strip()) for v in value.split(',')",
-            required=False,
-        ),
         spec.CSVInput(
             id="t_rasters_table",
             name=gettext("Table of temperature rasters"),
@@ -247,6 +231,22 @@ MODEL_SPEC = spec.ModelSpec(
                 ),
             ],
             projected=True,  # will this be necessary?
+        ),
+        spec.StringInput(
+            id="initial_solution",
+            name=gettext("Initial Solution"),
+            about=gettext(
+                "Sequence with the parameter values used as initial "
+                "solution, which can either be of the form "
+                "(t_air_average_radius, green_area_cooling_distance, "
+                "cc_weight_shade, cc_weight_albedo, cc_weight_eti) when "
+                "`cc_method` is 'factors', or (t_air_average_radius, "
+                "green_area_cooling_distance) when `cc_method` is "
+                "'intensity'. If not provided, the default values of the "
+                "urban cooling model will be used."),
+            regexp="[0-9., ]+",
+            expression="float(v.strip()) for v in value.split(',')",
+            required=False,
         ),
         spec.OptionStringInput(
             id="metric",
