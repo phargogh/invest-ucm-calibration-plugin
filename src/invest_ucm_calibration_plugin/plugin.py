@@ -377,13 +377,24 @@ def execute(args):
     # Translate t_stations vector to the CSV expected by the plugin
     # TODO: use file registry
     # TODO: use taskgraph
-    stations_loc_csv = os.path.join(args['workspace_dir'], 'station-loc.csv')
-    stations_temps_csv = os.path.join(
-        args['workspace_dir'], 'station-temps.csv')
-    _t_stations_vector_to_csv(
-        args['t_stations'], stations_loc_csv, stations_temps_csv)
-    calibrator_args['station_locations_filepath'] = stations_loc_csv
-    calibrator_args['station_t_filepath'] = stations_temps_csv
+    if 't_stations' in args:
+        stations_loc_csv = os.path.join(
+            args['workspace_dir'], 'station-loc.csv')
+        stations_temps_csv = os.path.join(
+            args['workspace_dir'], 'station-temps.csv')
+        _t_stations_vector_to_csv(
+            args['t_stations'], stations_loc_csv, stations_temps_csv)
+        calibrator_args['station_locations_filepath'] = stations_loc_csv
+        calibrator_args['station_t_filepath'] = stations_temps_csv
+    else:  # assume we're using vectors instead.
+        # keys: dates, t_raster_filepaths
+        temp_rasters_df = MODEL_SPEC.get_input(
+            't_rasters_table').get_validated_dataframe(
+                args['t_rasters_table'])
+        calibrator_args['dates'] = ','.join(list(
+            temp_rasters_df['t_raster_date'].values))
+        calibrator_args['t_raster_filepaths'] = ','.join(list(
+            temp_rasters_df['t_raster_path'].value))
 
     # If not provided, default model args will be used.
     # TODO: How does the calibration tool actually handle initial_solution??
