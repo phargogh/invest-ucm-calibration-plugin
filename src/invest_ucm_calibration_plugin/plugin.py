@@ -27,7 +27,7 @@ MODEL_SPEC = spec.ModelSpec(
         ['workspace_dir'],
         ['lulc_raster_path', 'biophysical_table_path', 'aoi_vector_path'],
         ['cc_method', 'ref_eto_table'],
-        ['t_rasters_table', 't_stations', 'uhi_max'],
+        ['t_refs', 't_rasters_table', 't_stations', 'uhi_max'],
         ['metric', 'stepsize', 'exclude_zero_kernel_dist'],
         ['num_steps', 'num_update_logs', 'initial_solution'],
     ],
@@ -380,12 +380,13 @@ def execute(args):
     calibrator_args['station_t_filepath'] = stations_temps_csv
 
     # If not provided, default model args will be used.
-    # TODO: How does the calibration tool actually handle this??
+    # TODO: How does the calibration tool actually handle initial_solution??
     #       Do we need to provide an initial solution or will the calibrator do
     #       it for us?
-    if 'initial_solution' in args and args['initial_solution']:
-        calibrator_args['initial_solution'] = [
-            float(v.strip) for v in args['initial_solution'].split(',')]
+    for key in ('initial_solution', 't_refs'):
+        if key in args and args[key]:
+            calibrator_args[key] = [
+                float(v.strip) for v in args[key].split(',')]
     ucm_cal_main.cli(**calibrator_args)
 
     # if not args['uhi_max']:
