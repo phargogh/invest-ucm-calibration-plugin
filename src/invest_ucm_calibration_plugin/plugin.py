@@ -154,10 +154,10 @@ MODEL_SPEC = spec.ModelSpec(
             # If not provided, the calibration tool uses the minimum observed
             # temperature, either from raster or station measurements,
             # depending on which sets of inputs are provided.
-            optional=True,
+            required=False,
             units=u.degree_Celsius,
         ),
-        spec.NumberInput(
+        spec.StringInput(
             id="uhi_maxs",
             name=gettext("UHI effects"),
             required=False,  # can be interred from temp rasters
@@ -175,8 +175,7 @@ MODEL_SPEC = spec.ModelSpec(
                 "for multiple dates, UHI values must be comma-separated."
             ),
             units=u.degree_Celsius,
-            regexp="[0-9., ]+",
-            expression="all(float(v.strip()) > 0 for v in value.split(','))",
+            expression="type(value) == list or all(float(v.strip()) > 0 for v in value.split(','))",
         ),
         spec.CSVInput(
             id="t_rasters_table",
@@ -316,6 +315,7 @@ MODEL_SPEC = spec.ModelSpec(
                 "If this number is the same as the number of steps, then "
                 "each iteration will be logged"),
             expression="int(value) > 0",
+            required=False,
         ),
         spec.StringInput(
             id="extra_ucm_args",
