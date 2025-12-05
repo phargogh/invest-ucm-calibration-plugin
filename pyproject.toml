@@ -10,7 +10,20 @@ dynamic = ["version"]
 dependencies = [
   "pygeoprocessing",
   "taskgraph",
-  "natcap.invest>=3.16.0"
+  "natcap.invest>=3.16.0",
+  "setuptools_scm",
+]
+
+[project.optional-dependencies]
+# To install: pip install -e .[dev]
+dev = [
+  "coverage",
+]
+
+# To install: pip install -e .[test]
+test = [
+  "pytest",
+  "hypothesis",
 ]
 
 [tool.setuptools_scm]
