@@ -184,7 +184,6 @@ MODEL_SPEC = spec.ModelSpec(
             name=gettext("Table of temperature rasters"),
             about=gettext(
                 "Table of temperature rasters and observation dates."),
-            index_col="t_raster_date",
             required="not t_stations",
             columns=[
                 spec.StringInput(
@@ -406,7 +405,7 @@ def execute(args):
         calibrator_args['dates'] = ','.join(list(
             temp_rasters_df['t_raster_date'].values))
         calibrator_args['t_raster_filepaths'] = ','.join(list(
-            temp_rasters_df['t_raster_path'].value))
+            temp_rasters_df['t_raster_path'].values))
 
     # If not provided, default model args will be used.
     # TODO: How does the calibration tool actually handle initial_solution??
@@ -420,7 +419,8 @@ def execute(args):
             elif isinstance(value, (int, float)):
                 value = [value]
             # float() will chomp leading/trailing whitespace if present
-            calibrator_args[key] = [float(v) for v in value]
+            # Converting to a string for the CLI to parse.
+            calibrator_args[key] = str(','.join(str(float(v)) for v in value))
 
     # TODO: is any validation needed to assert that the initial solution
     # matches the number of params needed?
