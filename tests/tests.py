@@ -237,6 +237,10 @@ class UCMCalibrationPluginTests(unittest.TestCase):
             # skipping extra_ucm_args: defaults
         }
         plugin.execute(calibration_args)
+        target_local_dir = os.path.join(CWD, 'test-invest-output')
+        if os.path.exists(target_local_dir):
+            shutil.rmtree(target_local_dir)
+        shutil.copytree(self.workspace, target_local_dir)
 
     def test_validate(self):
         args = self.base_kwargs.copy()
