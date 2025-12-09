@@ -1,5 +1,8 @@
 
-.PHONY: coverage,env
+.PHONY: coverage,env,test
+
+test:
+	python -m pytest -n auto -vs tests/tests.py --pdb
 
 coverage:
 	coverage run --source=src,env/lib/python3.13/site-packages/invest_ucm_calibration -m pytest tests/tests.py

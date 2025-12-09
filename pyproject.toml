@@ -23,7 +23,7 @@ dev = [
 # To install: pip install -e .[test]
 test = [
   "pytest",
-  "hypothesis",
+  "unittest-parametrize",
 ]
 
 [tool.setuptools_scm]

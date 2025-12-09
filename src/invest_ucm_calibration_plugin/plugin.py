@@ -11,6 +11,7 @@ from natcap.invest import spec
 from natcap.invest import validation
 from natcap.invest.unit_registry import u
 from osgeo import gdal
+from osgeo import osr
 
 # TODO: should I be using the calibration tool CLI or the object?
 #       CLI controls logging, warnings
@@ -456,12 +457,19 @@ def _t_stations_vector_to_csv(
     vector = gdal.OpenEx(t_stations_vector_path)
     layer = vector.GetLayer()
 
-    # TODO: do I need to transform the points from local projection to WGS84?
+    source_srs = layer.GetSpatialRef()
+    wgs84_srs = osr.SpatialReference()
+    wgs84_srs.ImportFromEPSG(4326)
+    osr_axis_mapping_strategy = osr.OAMS_TRADITIONAL_GIS_ORDER
+    source_srs.SetAxisMappingStrategy(osr_axis_mapping_strategy)
+    wgs84_srs.SetAxisMappingStrategy(osr_axis_mapping_strategy)
+    transformer = osr.CreateCoordinateTransformation(source_srs, wgs84_srs)
 
     stations = {}  # name: (x, y)
     temps = collections.defaultdict(dict)  # date: name: temp
     for feature in layer:
         geom = feature.GetGeometryRef()
+        geom.Transform(transformer)
         name = feature.GetField('name')
         stations[name] = (geom.GetX(), geom.GetY())
 

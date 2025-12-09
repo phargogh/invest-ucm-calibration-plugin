@@ -1,5 +1,6 @@
 import glob
 import os
+import random
 import shutil
 import subprocess
 import tempfile
@@ -12,12 +13,17 @@ import pandas
 import pandas.testing
 import pygeoprocessing
 import scipy.ndimage
+import shapely.geometry
+from hypothesis import given
+from hypothesis import strategies as st
 from invest_ucm_calibration_plugin import plugin
 from natcap.invest import datastack
 from osgeo import gdal
 from osgeo import ogr
 from osgeo import osr
 from shapely.geometry import Point
+from unittest_parametrize import parametrize
+from unittest_parametrize import ParametrizedTestCase
 
 CWD = os.path.dirname(__file__)
 DATA = os.path.join(CWD, 'data')
@@ -28,6 +34,16 @@ INVEST_DATA = os.path.join(CWD, 'invest-data')
 INVEST_DATA_ZIP = (
     'https://storage.googleapis.com/releases.naturalcapitalproject.org/'
     'invest/3.17.2/data/UrbanCoolingModel.zip')
+
+
+def _randomize_pts_in_bbox(bbox, n_pts, seed=None):
+    if seed:
+        random.seed(seed)
+    minx, miny, maxx, maxy = bbox
+
+    return [shapely.geometry.Point([
+        random.uniform(minx, maxx), random.uniform(miny, maxy)]) for i in
+        range(n_pts)]
 
 
 class UCMCalibrationPluginTests(unittest.TestCase):
@@ -127,8 +143,8 @@ class UCMCalibrationPluginTests(unittest.TestCase):
             os.path.join(DATA, 'station-t.csv'), index_col=0)
         station_t_data = station_t_df.to_dict()
 
-        wgs84_srs = osr.SpatialReference()
-        wgs84_srs.ImportFromEPSG(4326)
+        self.wgs84_srs = osr.SpatialReference()
+        self.wgs84_srs.ImportFromEPSG(4326)
 
         geoms = []
         attributes = []
@@ -147,30 +163,13 @@ class UCMCalibrationPluginTests(unittest.TestCase):
 
             attributes.append(field_data)
 
-        new_vector_path = os.path.join(DATA, 'stations.geojson')
-        if os.path.exists(new_vector_path):
-            os.remove(new_vector_path)  # driver won't overwrite files.
+        self.stations_vector = os.path.join(self.workspace, 'stations.geojson')
+        if os.path.exists(self.stations_vector):
+            os.remove(self.stations_vector)  # driver won't overwrite files.
         pygeoprocessing.shapely_geometry_to_vector(
-            geoms, new_vector_path, wgs84_srs.ExportToWkt(), 'GeoJSON', fields,
+            geoms, self.stations_vector, self.wgs84_srs.ExportToWkt(), 'GeoJSON', fields,
             attributes, ogr.wkbPoint)
 
-    def tearDown(self):
-        shutil.rmtree(self.workspace)
-
-    def test_execute(self):
-        args = {
-            'workspace_dir': self.workspace,
-            'lulc_raster_path': self.base_kwargs['lulc_raster_path'],
-            'biophysical_table_path': self.base_kwargs['biophysical_table_path'],
-            'ref_eto_table': self.base_kwargs['ref_eto_table'],
-            'cc_method': 'intensity',
-            'aoi_vector_filepath': '',
-            't_stations': os.path.join(DATA, 'stations.geojson'),
-        }
-        plugin.execute(args)
-
-    # TODO run tests with hypothesis
-    def test_execute_with_invest_data(self):
         invest_args = datastack.extract_parameter_set(
             os.path.join(INVEST_DATA, 'UrbanCoolingModel',
                          'urban_cooling_model_datastack.invest.json')).args
@@ -208,17 +207,18 @@ class UCMCalibrationPluginTests(unittest.TestCase):
             projection_wkt=raster_info['projection_wkt'],
             target_path=target_temp_raster)
 
-        t_rasters_table_path = os.path.join(
+        self.t_rasters_table_path = os.path.join(
             self.workspace, 't_rasters_table.csv')
-        with open(t_rasters_table_path, 'w') as t_rasters_table:
+        with open(self.t_rasters_table_path, 'w') as t_rasters_table:
             t_rasters_table.write(textwrap.dedent(
                 f"""\
                 t_raster_date,t_raster_path,
                 03-11-2025,{target_temp_raster},
                 """))
 
-        calibration_args = {
-            'workspace_dir': self.workspace,
+        self.workspace_dir = os.path.join(self.workspace, 'workspace')
+        self.calibration_args = {
+            'workspace_dir': self.workspace_dir,
             'lulc_raster_path': invest_args['lulc_raster_path'],
             'biophysical_table_path': invest_args['biophysical_table_path'],
             'cc_method': invest_args['cc_method'],
@@ -226,7 +226,7 @@ class UCMCalibrationPluginTests(unittest.TestCase):
             'aoi_vector_path': invest_args['aoi_vector_path'],
             't_refs': invest_args['t_ref'],
             'uhi_maxs': invest_args['uhi_max'],
-            't_rasters_table': t_rasters_table_path,
+            't_rasters_table': self.t_rasters_table_path,
             # skipping t stations vector for now.
             # skipping initial solution so calibrator uses defaults
             # skipping metric so it uses defaults
@@ -236,7 +236,30 @@ class UCMCalibrationPluginTests(unittest.TestCase):
             # skipping num_update_logs: defaults
             # skipping extra_ucm_args: defaults
         }
-        plugin.execute(calibration_args)
+        if not os.path.exists(self.calibration_args['workspace_dir']):
+            os.makedirs(self.calibration_args['workspace_dir'])
+
+    def tearDown(self):
+        shutil.rmtree(self.workspace)
+
+    def test_execute(self):
+        args = {
+            'workspace_dir': self.workspace_dir,
+            'lulc_raster_path': self.base_kwargs['lulc_raster_path'],
+            'biophysical_table_path': self.base_kwargs['biophysical_table_path'],
+            'ref_eto_table': self.base_kwargs['ref_eto_table'],
+            'cc_method': 'intensity',
+            'aoi_vector_filepath': '',
+            't_stations': self.stations_vector,
+        }
+        plugin.execute(args)
+
+    #def test_execute_with_invest_data(self, t_stations, initial_solution,
+    #                                  metric, stepsize,
+    #                                  exclude_zero_kernel_dist, num_steps,
+    #                                  num_update_logs):
+    def test_execute_with_invest_data_and_all_defaults(self):
+        plugin.execute(self.calibration_args)
         target_local_dir = os.path.join(CWD, 'test-invest-output')
         if os.path.exists(target_local_dir):
             shutil.rmtree(target_local_dir)
@@ -244,11 +267,16 @@ class UCMCalibrationPluginTests(unittest.TestCase):
 
     def test_validate(self):
         args = self.base_kwargs.copy()
-        args['workspace_dir'] = self.workspace
+        args['workspace_dir'] = self.workspace_dir
         self.assertEqual([], plugin.validate(args))
 
+    #@given(n=st.sampled_from(['foo', 'bar', 'baz']),
+    #       m=st.sampled_from([1, 2, 3]))
+    #def test_hypothesis(self, n, m):
+    #    print(n, m)
+
     def test_vector_to_csvs(self):
-        t_stations_vector_path = os.path.join(DATA, 'stations.geojson')
+        t_stations_vector_path = self.stations_vector
         target_stations_csv = os.path.join(
             self.workspace, 'target_stations.csv')
         target_temps_csv = os.path.join(
@@ -264,3 +292,44 @@ class UCMCalibrationPluginTests(unittest.TestCase):
             ref_df = pandas.read_csv(reference_file)
             new_df = pandas.read_csv(new_file)
             pandas.testing.assert_frame_equal(ref_df, new_df)
+
+
+class ParametrizedUCMTests(ParametrizedTestCase):
+    """Subclass to allow pytest parametrization."""
+    def setUp(self):
+        UCMCalibrationPluginTests.setUp(self)
+
+    def tearDown(self):
+        UCMCalibrationPluginTests.tearDown(self)
+
+    @parametrize('temps_mode', ['vector', 'rasters'])
+    def test_execute_parametrized(self, temps_mode):
+        if temps_mode == 'vector':
+            stations_vector = os.path.join(
+                self.workspace_dir, 'randomized-stations.geojson')
+            lulc_raster_info = pygeoprocessing.get_raster_info(
+                self.calibration_args['lulc_raster_path'])
+            geoms = _randomize_pts_in_bbox(
+                lulc_raster_info['bounding_box'], 3, seed=12345)
+            dates = ['01-22-2025', '06-20-2025']
+            random.seed(100)
+
+            temps = []
+            for index, _ in enumerate(geoms):
+                values = {'name': f'name_{index}'}
+                for date in dates:
+                    values[date] = random.uniform(25, 32)
+                temps.append(values)
+
+            fields = {'name': ogr.OFTString}
+            for date in dates:
+                fields[date] = ogr.OFTReal
+            pygeoprocessing.shapely_geometry_to_vector(
+                geoms, stations_vector, lulc_raster_info['projection_wkt'],
+                'GeoJSON', fields, temps, ogr.wkbPoint)
+
+            self.calibration_args['t_stations'] = stations_vector
+        elif temps_mode == 'rasters':
+            self.calibration_args['t_rasters_table'] = (
+                self.t_rasters_table_path)
+        plugin.execute(self.calibration_args)
